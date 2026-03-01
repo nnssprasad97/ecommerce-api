@@ -1,9 +1,10 @@
 package com.nnssp.ecommerce_backend.controller;
 
+import com.nnssp.ecommerce_backend.dto.AuthRequest;
 import com.nnssp.ecommerce_backend.entity.User;
 import com.nnssp.ecommerce_backend.repository.UserRepository;
 import com.nnssp.ecommerce_backend.util.JwtUtil;
-import lombok.Data;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -18,20 +19,20 @@ public class AuthController {
     private final JwtUtil jwtUtil;
 
     @PostMapping("/register")
-    public String register(@RequestBody AuthRequest request) {
+    public String register(@Valid @RequestBody AuthRequest request) {
         // Create new user
         User user = User.builder()
                 .email(request.getEmail())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .role(User.Role.CUSTOMER) // Default role
                 .build();
-        
+
         userRepository.save(user);
         return "User registered successfully!";
     }
 
     @PostMapping("/login")
-    public String login(@RequestBody AuthRequest request) {
+    public String login(@Valid @RequestBody AuthRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -41,12 +42,5 @@ public class AuthController {
 
         // Return the JWT Token
         return jwtUtil.generateToken(user.getEmail());
-    }
-
-    // Simple DTO for requests
-    @Data
-    public static class AuthRequest {
-        private String email;
-        private String password;
     }
 }

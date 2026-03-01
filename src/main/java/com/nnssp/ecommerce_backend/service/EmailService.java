@@ -5,6 +5,7 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
 
 @Service
+@lombok.extern.slf4j.Slf4j
 public class EmailService {
 
     @RabbitListener(queues = "orderQueue")
@@ -12,12 +13,13 @@ public class EmailService {
         // Simulate email sending delay
         try {
             Thread.sleep(2000); // Wait 2 seconds
-            System.out.println("==================================================");
-            System.out.println("📧 EMAIL SENT to " + event.getEmail());
-            System.out.println("📝 Order ID: " + event.getOrderId() + " Confirmed!");
-            System.out.println("==================================================");
+            log.info("==================================================");
+            log.info("📧 EMAIL SENT to {}", event.getEmail());
+            log.info("📝 Order ID: {} Confirmed!", event.getOrderId());
+            log.info("==================================================");
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            log.error("Email sending interrupted", e);
+            Thread.currentThread().interrupt();
         }
     }
 }

@@ -11,20 +11,29 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@lombok.extern.slf4j.Slf4j
 public class ProductService {
 
     private final ProductRepository productRepository;
 
     // EVALUATION POINT: Caching
-    // If we search for the same category twice, the 2nd time comes from Redis (Fast!)
+    // If we search for the same category twice, the 2nd time comes from Redis
+    // (Fast!)
     @Cacheable(value = "products", key = "#category")
     public List<Product> getProductsByCategory(String category) {
-        System.out.println("Fetching from Database for category: " + category); // Log to prove cache miss
+        log.info("Fetching from Database for category: {}", category); // Log to prove cache miss
         return productRepository.findByCategory(category);
     }
 
-    public List<Product> getAllProducts() {
-        return productRepository.findAll();
+    @Cacheable(value = "products", key = "'all_' + #sortBy + '_' + #order")
+    public List<Product> getAllProducts(String sortBy, String order) {
+        org.springframework.data.domain.Sort sort = org.springframework.data.domain.Sort.by(sortBy);
+        if ("desc".equalsIgnoreCase(order)) {
+            sort = sort.descending();
+        } else {
+            sort = sort.ascending();
+        }
+        return productRepository.findAll(sort);
     }
 
     public Product getProductById(Long id) {
@@ -37,5 +46,13 @@ public class ProductService {
     @CacheEvict(value = "products", allEntries = true)
     public Product saveProduct(Product product) {
         return productRepository.save(product);
+    }
+
+    @CacheEvict(value = "products", allEntries = true)
+    public void deleteProduct(Long id) {
+        if (!productRepository.existsById(id)) {
+            throw new RuntimeException("Product not found");
+        }
+        productRepository.deleteById(id);
     }
 }

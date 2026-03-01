@@ -1,4 +1,5 @@
 package com.nnssp.ecommerce_backend.service;
+
 import com.nnssp.ecommerce_backend.dto.OrderEvent;
 import com.nnssp.ecommerce_backend.entity.*;
 import com.nnssp.ecommerce_backend.repository.*;
@@ -61,7 +62,8 @@ public class OrderService {
 
             // EVALUATION POINT: Optimistic Locking
             // We decrement the stock. When we save(), Hibernate checks the @Version field.
-            // If another user changed this product in the meantime, this throws ObjectOptimisticLockingFailureException.
+            // If another user changed this product in the meantime, this throws
+            // ObjectOptimisticLockingFailureException.
             product.setStockQuantity(product.getStockQuantity() - qty);
             productRepository.save(product);
 
@@ -72,7 +74,7 @@ public class OrderService {
                     .quantity(qty)
                     .priceAtPurchase(product.getPrice())
                     .build();
-            
+
             orderItems.add(orderItem);
             totalAmount = totalAmount.add(product.getPrice().multiply(BigDecimal.valueOf(qty)));
         }
@@ -86,11 +88,16 @@ public class OrderService {
         cartRepository.delete(cart);
 
         // EVALUATION POINT: Async Processing
-        // We send a message to RabbitMQ. The user gets a response immediately, 
+        // We send a message to RabbitMQ. The user gets a response immediately,
         // while the email sends in the background.
         OrderEvent event = new OrderEvent(savedOrder.getId(), user.getId(), user.getEmail());
         rabbitTemplate.convertAndSend("orderQueue", event);
 
         return savedOrder;
+    }
+
+    public Order getOrderById(Long id) {
+        return orderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Order not found with id: " + id));
     }
 }
