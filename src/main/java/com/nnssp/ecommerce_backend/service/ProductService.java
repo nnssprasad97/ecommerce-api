@@ -1,6 +1,7 @@
 package com.nnssp.ecommerce_backend.service;
 
 import com.nnssp.ecommerce_backend.entity.Product;
+import com.nnssp.ecommerce_backend.exception.ResourceNotFoundException;
 import com.nnssp.ecommerce_backend.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
@@ -38,7 +39,7 @@ public class ProductService {
 
     public Product getProductById(Long id) {
         return productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
     }
 
     // EVALUATION POINT: Cache Invalidation
@@ -51,7 +52,7 @@ public class ProductService {
     @CacheEvict(value = "products", allEntries = true)
     public void deleteProduct(Long id) {
         if (!productRepository.existsById(id)) {
-            throw new RuntimeException("Product not found");
+            throw new ResourceNotFoundException("Product not found with id: " + id);
         }
         productRepository.deleteById(id);
     }

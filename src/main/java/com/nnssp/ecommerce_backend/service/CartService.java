@@ -4,6 +4,7 @@ import com.nnssp.ecommerce_backend.entity.Cart;
 import com.nnssp.ecommerce_backend.entity.CartItem;
 import com.nnssp.ecommerce_backend.entity.Product;
 import com.nnssp.ecommerce_backend.entity.User;
+import com.nnssp.ecommerce_backend.exception.ResourceNotFoundException;
 import com.nnssp.ecommerce_backend.repository.CartRepository;
 import com.nnssp.ecommerce_backend.repository.ProductRepository;
 import com.nnssp.ecommerce_backend.repository.UserRepository;
@@ -22,7 +23,7 @@ public class CartService {
 
     public Cart addToCart(Long userId, Long productId, Integer quantity) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         Cart cart = cartRepository.findByUser(user).orElse(new Cart());
         if (cart.getUser() == null) {
@@ -31,7 +32,7 @@ public class CartService {
         }
 
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new RuntimeException("Product not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
         CartItem item = new CartItem();
         item.setCart(cart);
@@ -45,9 +46,9 @@ public class CartService {
 
     public Cart getCart(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         return cartRepository.findByUser(user)
-                .orElseThrow(() -> new RuntimeException("Cart not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Cart not found"));
     }
 
     public void removeFromCart(Long userId, Long itemId) {
@@ -55,7 +56,7 @@ public class CartService {
 
         boolean removed = cart.getItems().removeIf(item -> item.getId().equals(itemId));
         if (!removed) {
-            throw new RuntimeException("Item not found in cart");
+            throw new ResourceNotFoundException("Item not found in cart");
         }
 
         cartRepository.save(cart);

@@ -2,6 +2,8 @@ package com.nnssp.ecommerce_backend.controller;
 
 import com.nnssp.ecommerce_backend.dto.AuthRequest;
 import com.nnssp.ecommerce_backend.entity.User;
+import com.nnssp.ecommerce_backend.exception.ResourceNotFoundException;
+import com.nnssp.ecommerce_backend.exception.UnauthorizedException;
 import com.nnssp.ecommerce_backend.repository.UserRepository;
 import com.nnssp.ecommerce_backend.util.JwtUtil;
 import jakarta.validation.Valid;
@@ -34,10 +36,10 @@ public class AuthController {
     @PostMapping("/login")
     public String login(@Valid @RequestBody AuthRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + request.getEmail()));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
-            throw new RuntimeException("Invalid password");
+            throw new UnauthorizedException("Invalid password");
         }
 
         // Return the JWT Token

@@ -2,6 +2,8 @@ package com.nnssp.ecommerce_backend.service;
 
 import com.nnssp.ecommerce_backend.dto.OrderEvent;
 import com.nnssp.ecommerce_backend.entity.*;
+import com.nnssp.ecommerce_backend.exception.ResourceNotFoundException;
+import com.nnssp.ecommerce_backend.exception.InsufficientStockException;
 import com.nnssp.ecommerce_backend.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -31,9 +33,9 @@ public class OrderService {
     public Order placeOrder(Long userId) {
         // 1. Fetch User and Cart
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         Cart cart = cartRepository.findByUser(user)
-                .orElseThrow(() -> new RuntimeException("Cart is empty"));
+                .orElseThrow(() -> new ResourceNotFoundException("Cart not found"));
 
         if (cart.getItems().isEmpty()) {
             throw new RuntimeException("Cart is empty");
@@ -52,12 +54,15 @@ public class OrderService {
 
         // 3. Process Items & Check Stock
         for (CartItem cartItem : cart.getItems()) {
-            Product product = cartItem.getProduct();
+            Product product = productRepository.findById(cartItem.getProduct().getId())
+                    // MUST handle concurrent updates properly, but optimistic locking should
+                    // prevent issues
+                    .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
             int qty = cartItem.getQuantity();
 
             // Stock Check
             if (product.getStockQuantity() < qty) {
-                throw new RuntimeException("Insufficient stock for product: " + product.getName());
+                throw new InsufficientStockException("Not enough stock for product: " + product.getName());
             }
 
             // EVALUATION POINT: Optimistic Locking
@@ -98,6 +103,6 @@ public class OrderService {
 
     public Order getOrderById(Long id) {
         return orderRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Order not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
     }
 }
